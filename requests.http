@@ -1,0 +1,64 @@
+# Get Readiness Status
+GET {{BASE_URL}}/readiness
+
+### User
+# Post New User
+POST {{BASE_URL}}/users
+Content-Type: application/json
+
+{
+  "name": "John Doe"
+}
+
+
+# Get User by API key
+GET {{BASE_URL}}/users
+Authorization: {{API_KEY}}
+
+
+### Feed
+# Post New Feed (automatically subscribes a user to it)
+POST {{BASE_URL}}/feeds
+Content-Type: application/json
+Authorization: {{API_KEY}}
+
+{
+  "name": "Lane's blog",
+	"url": "https://www.wagslane.dev/index.xml"
+}
+--{%
+    local body = context.json_decode(context.result.body)
+		if body.error == nil then
+			context.set_env("FEED_ID", body.feed.id)
+			context.set_env("FEED_FOLLOW_ID", body.feed_follow.id)
+		end
+--%}
+
+
+# Get Feeds
+GET {{BASE_URL}}/feeds
+
+### Feed Follow
+# Create Feed Follow
+POST {{BASE_URL}}/feed_follows
+Content-Type: application/json
+Authorization: {{API_KEY}}
+
+{
+	"feed_id": "{{FEED_ID}}"
+}
+
+# Get User's Feed Follows
+GET {{BASE_URL}}/feed_follows
+Authorization: {{API_KEY}}
+
+# Get User's Feed Follows
+DELETE {{BASE_URL}}/feed_follows/{{FEED_FOLLOW_ID}}
+Authorization: {{API_KEY}}
+
+### Post
+# Get User's Posts
+# limit is 10 by default
+GET {{BASE_URL}}/posts?limit=2
+Authorization: {{API_KEY}}
+

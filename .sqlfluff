@@ -1,0 +1,11 @@
+[sqlfluff]
+dialect = postgres
+
+[sqlfluff:indentation]
+indent_unit = tab
+
+[sqlfluff:rules:references.keywords]
+ignore_words = name
+
+[sqlfluff.rules.capitalisation.keywords]
+capitalisation_policy = upper
