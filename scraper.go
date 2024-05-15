@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/Demianeen/rss-feed-aggregator/internal/database"
 	"github.com/Demianeen/rss-feed-aggregator/internal/utils"
+	"github.com/araddon/dateparse"
 )
 
 func (cfg *apiConfig) startScraping(concurrentScrapers int, timeBetweenRequest time.Duration) {
@@ -63,7 +63,7 @@ func (cfg *apiConfig) scrapeFeed(wg *sync.WaitGroup, feed database.Feed) {
 			description.Valid = true
 		}
 
-		publishedAt, err := parseRssDate(item.PubDate)
+		publishedAt, err := dateparse.ParseStrict(item.PubDate)
 		if err != nil {
 			log.Printf("couldn't parse date: %v", err)
 			continue
@@ -84,25 +84,6 @@ func (cfg *apiConfig) scrapeFeed(wg *sync.WaitGroup, feed database.Feed) {
 		}
 	}
 	log.Printf("Feed %s collected, %v new posts found", feed.Name, newPostsCount)
-}
-
-func parseRssDate(dateStr string) (time.Time, error) {
-	layouts := []string{
-		time.RFC1123,                      // "Mon, 02 Jan 2006 15:04:05 MST"
-		time.RFC1123Z,                     // "Mon, 02 Jan 2006 15:04:05 -0700"
-		time.RFC3339,                      // "2006-01-02T15:04:05Z07:00"
-		time.RFC3339Nano,                  // "2006-01-02T15:04:05.999999999Z07:00"
-		"Mon, 02 Jan 2006 15:04:05 -0700", // Some feeds use this format
-	}
-
-	for _, layout := range layouts {
-		time, err := time.Parse(layout, dateStr)
-		if err == nil {
-			return time, nil
-		}
-	}
-
-	return time.Time{}, fmt.Errorf("couldn't parse the date %s", dateStr)
 }
 
 func postExists(db *database.Queries, url string) bool {
