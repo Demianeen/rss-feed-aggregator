@@ -49,36 +49,38 @@ func (cfg *apiConfig) scrapeFeed(wg *sync.WaitGroup, feed database.Feed) {
 
 	newPostsCount := 0
 	for _, item := range rssFeed.Channel.Item {
-		if !postExists(cfg.DB, item.Link) {
-			newPostsCount++
+		if postExists(cfg.DB, item.Link) {
+			// we assume that all new posts are at the top
+			break
+		}
+		newPostsCount++
 
-			id, created_at, updated_at := utils.NewDbEntry()
+		id, created_at, updated_at := utils.NewDbEntry()
 
-			description := sql.NullString{}
-			if item.Description != "" {
-				description.String = item.Description
-				description.Valid = true
-			}
+		description := sql.NullString{}
+		if item.Description != "" {
+			description.String = item.Description
+			description.Valid = true
+		}
 
-			publishedAt, err := parseRssDate(item.PubDate)
-			if err != nil {
-				log.Printf("couldn't parse date: %v", err)
-				continue
-			}
+		publishedAt, err := parseRssDate(item.PubDate)
+		if err != nil {
+			log.Printf("couldn't parse date: %v", err)
+			continue
+		}
 
-			_, err = cfg.DB.CreatePost(context.Background(), database.CreatePostParams{
-				ID:          id,
-				CreatedAt:   created_at,
-				UpdatedAt:   updated_at,
-				Title:       item.Title,
-				Description: description,
-				PublishedAt: publishedAt,
-				Url:         item.Link,
-				FeedID:      feed.ID,
-			})
-			if err != nil {
-				log.Printf("couldn't create post: %v", err)
-			}
+		_, err = cfg.DB.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          id,
+			CreatedAt:   created_at,
+			UpdatedAt:   updated_at,
+			Title:       item.Title,
+			Description: description,
+			PublishedAt: publishedAt,
+			Url:         item.Link,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			log.Printf("couldn't create post: %v", err)
 		}
 	}
 	log.Printf("Feed %s collected, %v new posts found", feed.Name, newPostsCount)
